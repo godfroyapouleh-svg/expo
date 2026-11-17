@@ -1,160 +1,505 @@
----
-title: Expo SDK reference
-description: Access device and system functionality in your Expo and React Native apps using Expo SDK packages.
-hideTOC: true
----
 
-import { BookOpen02Icon } from '@expo/styleguide-icons/outline/BookOpen02Icon';
-import { CodeSquare01Icon } from '@expo/styleguide-icons/outline/CodeSquare01Icon';
-
-import { BoxLink } from '~/ui/components/BoxLink';
-import { Collapsible } from '~/ui/components/Collapsible';
-import RedirectNotification from '~/ui/components/RedirectNotification';
+import React, { useState } from 'react';
 import {
-  AndroidIOSCompatibilityTable,
-  ReactNativeCompatibilityTable,
-} from '~/ui/components/SDKTables';
-import { Terminal } from '~/ui/components/Snippet';
-import { CODE } from '~/ui/components/Text';
+  View, Text, TouchableOpacity, ScrollView,
+  TextInput, StyleSheet, SafeAreaView,
+  StatusBar, Alert
+} from 'react-native';
 
-<RedirectNotification>
-  The page you are looking for does not exist in this SDK version. It may have been deprecated or
-  added to a newer SDK version.
-</RedirectNotification>
+const NAVY = '#10243A';
+const NAVY2 = '#183650';
+const ORANGE = '#F59E0B';
+const BG = '#F3F6FA';
+const WHITE = '#FFFFFF';
 
-The Expo SDK is a collection of packages that provide access to device and system functionality such as camera, contacts, location, sensors, haptics, and more. Each package targets a specific feature and can be used independently. All packages work in any React Native app with the `expo` package installed.
-
-You can install any Expo SDK package using the [`npx expo install`](/more/expo-cli/#install) command. For example, three different packages are installed using the following command:
-
-<Terminal
-  cmd={{
-    npm: ['$ npx expo install expo-camera expo-contacts expo-sensors'],
-    yarn: ['$ yarn expo install expo-camera expo-contacts expo-sensors'],
-    pnpm: ['$ pnpm expo install expo-camera expo-contacts expo-sensors'],
-    bun: ['$ bun expo install expo-camera expo-contacts expo-sensors'],
-  }}
-/>
-
-After installing one or more packages, you can import them into your JavaScript code:
-
-```ts
-import { CameraView } from 'expo-camera';
-import { Contact } from 'expo-contacts';
-import { Gyroscope } from 'expo-sensors';
-```
-
-This allows you to write [`Contact.getAll()`](./sdk/contacts#getalloptions) and read the contacts from the device, read the gyroscope sensor to detect device movement, or start the phone's camera and take photos.
-
-## All Expo SDK packages work in any React Native app
-
-Expo apps are React Native apps, so all Expo SDK packages work in any React Native app with the `expo` package installed and configured. The easiest way to create a React Native app with support for Expo SDK packages is to use `create-expo-app`. However, you can also add Expo SDK support to an existing React Native app with the `npx install-expo-modules` command.
-
-<Terminal
-  cmd={{
-    npm: [
-      '# Create a project named my-app',
-      '$ npx create-expo-app my-app --template bare-minimum',
-    ],
-    yarn: [
-      '# Create a project named my-app',
-      '$ yarn create expo-app my-app --template bare-minimum',
-    ],
-    pnpm: [
-      '# Create a project named my-app',
-      '$ pnpm create expo-app my-app --template bare-minimum',
-    ],
-    bun: ['# Create a project named my-app', '$ bun create expo my-app --template bare-minimum'],
-  }}
-/>
-
-<BoxLink
-  title="Install Expo SDK packages in existing React Native apps"
-  href="/bare/installing-expo-modules"
-  description={
-    <>
-      Learn more about configuring projects created with{' '}
-      <CODE>npx @react-native-community/cli@latest init</CODE> to Expo SDK packages.
-    </>
+const translations = {
+  fr: {
+    dashboard: 'Tableau de bord',
+    clients: 'Clients',
+    projects: 'Chantiers',
+    quotes: 'Devis',
+    invoices: 'Factures',
+    materials: 'Matériaux',
+    welcome: 'Bienvenue sur MAG BTP',
+    overview: 'Vue générale de votre activité',
+    revenue: 'Revenus',
+    active: 'Chantiers actifs',
+    customers: 'Clients',
+    pending: 'Devis en attente',
+    recent: 'Activité récente',
+    quick: 'Actions rapides',
+    addClient: 'Nouveau client',
+    addProject: 'Nouveau chantier',
+    addQuote: 'Créer un devis',
+    addInvoice: 'Nouvelle facture',
+    search: 'Rechercher...',
+    name: 'Nom',
+    phone: 'Téléphone',
+    title: 'Titre',
+    amount: 'Montant (FCFA)',
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    empty: 'Aucun élément pour le moment.',
+    language: 'Langue',
+    settings: 'Paramètres',
+    home: 'Accueil',
+    more: 'Plus',
+    currency: 'FCFA',
+    noData: 'Aucune activité récente',
+    logout: 'Déconnexion'
+  },
+  en: {
+    dashboard: 'Dashboard',
+    clients: 'Clients',
+    projects: 'Projects',
+    quotes: 'Quotes',
+    invoices: 'Invoices',
+    materials: 'Materials',
+    welcome: 'Welcome to MAG BTP',
+    overview: 'Your business overview',
+    revenue: 'Revenue',
+    active: 'Active projects',
+    customers: 'Customers',
+    pending: 'Pending quotes',
+    recent: 'Recent activity',
+    quick: 'Quick actions',
+    addClient: 'New client',
+    addProject: 'New project',
+    addQuote: 'Create quote',
+    addInvoice: 'New invoice',
+    search: 'Search...',
+    name: 'Name',
+    phone: 'Phone',
+    title: 'Title',
+    amount: 'Amount (FCFA)',
+    save: 'Save',
+    cancel: 'Cancel',
+    empty: 'Nothing here yet.',
+    language: 'Language',
+    settings: 'Settings',
+    home: 'Home',
+    more: 'More',
+    currency: 'FCFA',
+    noData: 'No recent activity',
+    logout: 'Log out'
   }
-  Icon={BookOpen02Icon}
-/>
+};
 
-<BoxLink
-  title="Use libraries"
-  description="Learn how to install Expo SDK packages in your project."
-  href="/workflow/using-libraries"
-  Icon={CodeSquare01Icon}
-/>
+const initialData = {
+  clients: [
+    { id: 1, name: 'Jean M.', phone: '6XX XXX XXX' },
+    { id: 2, name: 'Entreprise ABC', phone: '6XX XXX XXX' }
+  ],
+  projects: [
+    { id: 1, name: 'Construction Villa', amount: 2500000 },
+    { id: 2, name: 'Rénovation maison', amount: 850000 }
+  ],
+  quotes: [],
+  invoices: [],
+  materials: [
+    { id: 1, name: 'Ciment', amount: 5000 },
+    { id: 2, name: 'Fer à béton', amount: 4500 }
+  ]
+};
 
-## Using pre-release versions
+const sections = [
+  { key: 'dashboard', icon: '⌂' },
+  { key: 'clients', icon: '♙' },
+  { key: 'projects', icon: '▦' },
+  { key: 'quotes', icon: '▤' },
+  { key: 'invoices', icon: '▣' },
+  { key: 'materials', icon: '◈' }
+];
 
-New Expo SDK versions are released three times each year. Between these releases, we publish pre-release versions of the `expo` package and all of the Expo SDK packages. Pre-releases are not considered stable and should only be used if you are comfortable with the risk of encountering bugs or other issues.
+export default function App() {
+  const [lang, setLang] = useState('fr');
+  const [page, setPage] = useState('dashboard');
+  const [data, setData] = useState(initialData);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({
+    name: '', phone: '', amount: ''
+  });
+  const [search, setSearch] = useState('');
 
-### Canary releases
+  const t = translations[lang];
 
-Canary releases represent a snapshot of the state of the `main` branch at the time they are published. Canary package versions include `-canary` in the name, along with the date and commit hash, such as `58.0.0-canary-20260909-ea7a89a`. To install the latest canary release:
+  const labels = {
+    clients: t.clients,
+    projects: t.projects,
+    quotes: t.quotes,
+    invoices: t.invoices,
+    materials: t.materials
+  };
 
-<Terminal
-  cmd={{
-    npm: [
-      '# Install the alpha version of expo and its related packages',
-      '$ npm install expo@canary && npx expo install --fix',
-    ],
-    yarn: [
-      '# Install the alpha version of expo and its related packages',
-      '$ yarn add expo@canary && yarn expo install --fix',
-    ],
-    pnpm: [
-      '# Install the alpha version of expo and its related packages',
-      '$ pnpm add expo@canary && pnpm expo install --fix',
-    ],
-    bun: [
-      '# Install the alpha version of expo and its related packages',
-      '$ bun add expo@canary && bun expo install --fix',
-    ],
-  }}
-/>
+  const formatMoney = (value) =>
+    Number(value || 0).toLocaleString('fr-FR') + ' FCFA';
 
-You can often use pre-release versions of individual packages with stable releases of the Expo SDK. There may occasionally be incompatibilities or other issues that arise in canary-quality releases. You may want to [silence dependency validation warnings](/more/expo-cli/#configuring-dependency-validation) if you opt in to the canary package and once you have verified that it works well for your use cases.
+  const totalRevenue = data.invoices.reduce(
+    (sum, item) => sum + Number(item.amount || 0), 0
+  );
 
-### Beta releases
+  const openForm = () => {
+    setForm({ name: '', phone: '', amount: '' });
+    setModal(true);
+  };
 
-Before each Expo SDK release, we publish beta versions of the `expo` package and all of the Expo SDK packages. Beta releases are considered much more stable than canary releases, and we encourage developers to try them out on their apps and share their feedback. Beta releases use the `beta` tag on npm and follow the instructions in the related [changelog](https://expo.dev/changelog) post.
+  const saveItem = () => {
+    if (!form.name.trim()) {
+      Alert.alert('MAG BTP', t.name + ' requis');
+      return;
+    }
 
-## Each Expo SDK version depends on a React Native version
+    const item = {
+      id: Date.now(),
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      amount: Number(form.amount || 0)
+    };
 
-<ReactNativeCompatibilityTable />
+    setData(old => ({
+      ...old,
+      [page]: [...old[page], item]
+    }));
 
-### Additional information
+    setModal(false);
+    Alert.alert('MAG BTP', t.save + ' ✓');
+  };
 
-<Collapsible summary="Expo SDK policy for tracking React Native releases">
+  const pageTitle = page === 'dashboard'
+    ? t.dashboard : labels[page] || t.settings;
 
-- Each Expo SDK release targets a single React Native version. This is typically the latest stable version at the time of the release.
-- React Native currently has six releases per year and aims for every release to include no breaking changes.
-- Expo SDK releases aim to follow this cadence.
-- Pre-release versions of the upcoming Expo SDK will include support for the latest version of React Native quickly, usually the same day it is released. A member of the Expo SDK team works on the React Native releases team for each release, and is responsible for continuously updating the React Native version in the Expo repository, verifying compatibility, and reporting regressions back to the React Native team.
+  const renderDashboard = () => (
+    <>
+      <View style={styles.welcome}>
+        <Text style={styles.welcomeSmall}>MAG BTP ⚡</Text>
+        <Text style={styles.welcomeTitle}>{t.welcome}</Text>
+        <Text style={styles.welcomeSub}>{t.overview}</Text>
+      </View>
 
-</Collapsible>
+      <Text style={styles.sectionTitle}>{t.dashboard}</Text>
 
-<Collapsible summary="What if I need a change from the latest React Native version and it's not yet in an Expo SDK release?"
->
-Expo engineers on the React Native releases team ensure that any urgent fixes are included in the React Native version used by the latest Expo SDK. If your specific fix won't be cherrypicked into an existing release, perhaps because it is not considered critical or because it involves a breaking change, then you have two options:
+      <View style={styles.stats}>
+        <Stat label={t.revenue}
+          value={formatMoney(totalRevenue)}
+          icon="↗" />
+        <Stat label={t.active}
+          value={String(data.projects.length)}
+          icon="⌂" />
+        <Stat label={t.customers}
+          value={String(data.clients.length)}
+          icon="♙" />
+        <Stat label={t.pending}
+          value={String(data.quotes.length)}
+          icon="▤" />
+      </View>
 
-1. Use [`patch-package`](https://github.com/ds300/patch-package) to pull in the fix.
-2. Use a [pre-release version of the Expo SDK](#using-pre-release-versions).
+      <Text style={styles.sectionTitle}>{t.quick}</Text>
+      <View style={styles.quickGrid}>
+        {['clients', 'projects', 'quotes', 'invoices'].map(key => (
+          <TouchableOpacity
+            key={key}
+            style={styles.quickButton}
+            onPress={() => {
+              setPage(key);
+              setForm({ name: '', phone: '', amount: '' });
+              setModal(true);
+            }}>
+            <Text style={styles.quickIcon}>＋</Text>
+            <Text style={styles.quickText}>
+              {t['add' + key.charAt(0).toUpperCase() + key.slice(1)] ||
+               labels[key]}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-</Collapsible>
+      <Text style={styles.sectionTitle}>{t.recent}</Text>
+      <View style={styles.card}>
+        {data.projects.slice(-3).reverse().map(item => (
+          <View key={item.id} style={styles.activity}>
+            <View style={styles.activityIcon}>
+              <Text>⌂</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.muted}>{t.projects}</Text>
+            </View>
+            <Text style={styles.orange}>En cours</Text>
+          </View>
+        ))}
+        {data.projects.length === 0 &&
+          <Text style={styles.muted}>{t.noData}</Text>}
+      </View>
+    </>
+  );
 
-<Collapsible summary="Can I use an older version of React Native with the latest Expo SDK?">
+  const renderList = () => {
+    const items = data[page] || [];
+    const filtered = items.filter(item =>
+      item.name.toLowerCase().includes(search.toLowerCase())
+    );
 
-Packages in the Expo SDK are intended to support the target React Native version for that SDK. Typically, they will not support older versions of React Native, but they may. When a new version of React Native is released, the latest versions of the Expo SDK packages are typically updated to support it. However, this may take weeks or more, depending on the extent of the changes in the release.
+    return (
+      <>
+        <TextInput
+          style={styles.search}
+          placeholder={t.search}
+          value={search}
+          onChangeText={setSearch}
+        />
+        <TouchableOpacity style={styles.addButton} onPress={openForm}>
+          <Text style={styles.addText}>＋  {labels[page]}</Text>
+        </TouchableOpacity>
 
-</Collapsible>
+        {filtered.length === 0 ?
+          <View style={styles.card}>
+            <Text style={styles.muted}>{t.empty}</Text>
+          </View>
+          : filtered.map(item => (
+            <View style={styles.listCard} key={item.id}>
+              <View style={styles.activityIcon}>
+                <Text style={{ color: ORANGE }}>◆</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                {item.phone ? (
+                  <Text style={styles.muted}>{item.phone}</Text>
+                ) : null}
+                {item.amount > 0 ? (
+                  <Text style={styles.orange}>
+                    {formatMoney(item.amount)}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))}
+      </>
+    );
+  };
 
-## Support for Android and iOS versions
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor={NAVY} />
 
-Each version of Expo SDK supports a minimum OS version of Android and iOS. For Android, the `compileSdkVersion` is defined which tells the [Gradle](https://developer.android.com/studio/build) which Android SDK version to use to compile the app. This also means that you can use the Android API features included in that SDK version and from the previous versions. For iOS, the [Xcode](https://developer.apple.com/news/upcoming-requirements/) tells the minimum Xcode SDK version to use to compile the app.
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.logo}>MAG <Text style={{ color: ORANGE }}>BTP.</Text></Text>
+          <Text style={styles.headerSub}>BUILD • MANAGE • SUCCEED</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.langButton}
+          onPress={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
+          <Text style={styles.langText}>
+            {lang === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-<AndroidIOSCompatibilityTable />
+      <View style={styles.pageHeader}>
+        <Text style={styles.pageTitle}>{pageTitle}</Text>
+        <Text style={styles.pageDate}>MAG BTP • 2026</Text>
+      </View>
 
-When deciding whether to upgrade your Expo SDK version, consider both Expo's SDK version and app store submission requirements, as described in the above table. Google Play Store and Apple App Store periodically increase their minimum required OS versions and API levels, which are required for new app submissions. Expo has no control over the app store requirements, and you should check [Google](https://developer.android.com/studio/build) and [Apple](https://developer.apple.com/news/upcoming-requirements/) for the current store submission requirements.
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 30 }}
+        keyboardShouldPersistTaps="handled">
+        {page === 'dashboard' ? renderDashboard() : renderList()}
+      </ScrollView>
+
+      <View style={styles.bottomNav}>
+        {sections.slice(0, 5).map(item => (
+          <TouchableOpacity
+            key={item.key}
+            style={styles.navItem}
+            onPress={() => {
+              setPage(item.key);
+              setSearch('');
+            }}>
+            <Text style={[
+              styles.navIcon,
+              page === item.key && styles.navActive
+            ]}>{item.icon}</Text>
+            <Text style={[
+              styles.navLabel,
+              page === item.key && styles.navActive
+            ]}>{t[item.key]}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {modal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>
+              {labels[page] || t.save}
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t.name + ' / ' + t.title}
+              value={form.name}
+              onChangeText={v => setForm({ ...form, name: v })}
+            />
+            {page === 'clients' && (
+              <TextInput
+                style={styles.input}
+                placeholder={t.phone}
+                keyboardType="phone-pad"
+                value={form.phone}
+                onChangeText={v => setForm({ ...form, phone: v })}
+              />
+            )}
+            {['projects', 'quotes', 'invoices', 'materials'].includes(page) && (
+              <TextInput
+                style={styles.input}
+                placeholder={t.amount}
+                keyboardType="numeric"
+                value={form.amount}
+                onChangeText={v => setForm({ ...form, amount: v })}
+              />
+            )}
+            <TouchableOpacity style={styles.addButton} onPress={saveItem}>
+              <Text style={styles.addText}>{t.save}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setModal(false)}>
+              <Text style={styles.cancel}>{t.cancel}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+function Stat({ label, value, icon }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statIcon}>{icon}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: BG },
+  header: {
+    backgroundColor: NAVY, paddingHorizontal: 20,
+    paddingVertical: 17, flexDirection: 'row',
+    justifyContent: 'space-between', alignItems: 'center'
+  },
+  logo: { color: WHITE, fontSize: 25, fontWeight: '900' },
+  headerSub: { color: '#AFC2D4', fontSize: 9, letterSpacing: 2 },
+  langButton: {
+    backgroundColor: NAVY2, padding: 10, borderRadius: 10
+  },
+  langText: { color: WHITE, fontWeight: 'bold' },
+  pageHeader: {
+    padding: 18, flexDirection: 'row',
+    justifyContent: 'space-between', alignItems: 'center'
+  },
+  pageTitle: { color: NAVY, fontSize: 21, fontWeight: '800' },
+  pageDate: { color: '#8292A3', fontSize: 10 },
+  content: { flex: 1, paddingHorizontal: 16 },
+  welcome: {
+    backgroundColor: NAVY, borderRadius: 18,
+    padding: 22, marginBottom: 22
+  },
+  welcomeSmall: {
+    color: ORANGE, fontWeight: 'bold', letterSpacing: 2
+  },
+  welcomeTitle: {
+    color: WHITE, fontSize: 23,
+    fontWeight: '800', marginTop: 12
+  },
+  welcomeSub: { color: '#C5D3E0', marginTop: 7 },
+  sectionTitle: {
+    color: NAVY, fontSize: 16,
+    fontWeight: '800', marginBottom: 13, marginTop: 5
+  },
+  stats: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    justifyContent: 'space-between', marginBottom: 20
+  },
+  statCard: {
+    width: '48%', backgroundColor: WHITE,
+    borderRadius: 15, padding: 15, marginBottom: 12
+  },
+  statIcon: { color: ORANGE, fontSize: 22 },
+  statValue: {
+    color: NAVY, fontWeight: '900',
+    fontSize: 19, marginTop: 9
+  },
+  statLabel: { color: '#8292A3', fontSize: 11, marginTop: 5 },
+  quickGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    justifyContent: 'space-between', marginBottom: 20
+  },
+  quickButton: {
+    width: '48%', backgroundColor: WHITE,
+    borderRadius: 14, padding: 16, marginBottom: 10
+  },
+  quickIcon: { color: ORANGE, fontSize: 24, fontWeight: 'bold' },
+  quickText: { color: NAVY, fontWeight: '700', marginTop: 8 },
+  card: {
+    backgroundColor: WHITE, borderRadius: 15,
+    padding: 16, marginBottom: 14
+  },
+  activity: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 10, gap: 10
+  },
+  activityIcon: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: '#FFF4DF',
+    justifyContent: 'center', alignItems: 'center'
+  },
+  itemName: { color: NAVY, fontWeight: '800', fontSize: 14 },
+  muted: { color: '#8795A5', fontSize: 12, marginTop: 4 },
+  orange: { color: '#D98200', fontWeight: '700', fontSize: 12 },
+  search: {
+    backgroundColor: WHITE, borderRadius: 12,
+    padding: 15, marginBottom: 14, fontSize: 14
+  },
+  addButton: {
+    backgroundColor: ORANGE, borderRadius: 12,
+    padding: 15, alignItems: 'center', marginBottom: 16
+  },
+  addText: { color: NAVY, fontWeight: '900' },
+  listCard: {
+    backgroundColor: WHITE, borderRadius: 14,
+    padding: 14, marginBottom: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 12
+  },
+  bottomNav: {
+    backgroundColor: WHITE, flexDirection: 'row',
+    justifyContent: 'space-around', paddingVertical: 10,
+    borderTopWidth: 1, borderTopColor: '#E7ECF2'
+  },
+  navItem: { alignItems: 'center', flex: 1 },
+  navIcon: { color: '#8997A6', fontSize: 21 },
+  navLabel: { color: '#8997A6', fontSize: 9, marginTop: 4 },
+  navActive: { color: ORANGE, fontWeight: '900' },
+  modalOverlay: {
+    position: 'absolute', top: 0, bottom: 0,
+    left: 0, right: 0, backgroundColor: '#0009',
+    justifyContent: 'center', padding: 22
+  },
+  modal: {
+    backgroundColor: WHITE, borderRadius: 20,
+    padding: 22
+  },
+  modalTitle: {
+    fontSize: 20, fontWeight: '900',
+    color: NAVY, marginBottom: 18
+  },
+  input: {
+    borderWidth: 1, borderColor: '#DCE3EA',
+    borderRadius: 10, padding: 14,
+    marginBottom: 12, color: NAVY
+  },
+  cancel: {
+    textAlign: 'center', color: '#64748B',
+    padding: 12, fontWeight: '700'
+  }
+});
