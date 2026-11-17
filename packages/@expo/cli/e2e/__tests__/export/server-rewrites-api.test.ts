@@ -13,7 +13,6 @@ runExportSideEffects();
 
 describe.each(
   prepareServers([RUNTIME_EXPO_SERVE, RUNTIME_EXPRESS_SERVER, RUNTIME_WORKERD], {
-    app: 'server-tester',
     uniqueOutputKey: 'rewrites-api',
     export: {
       env: {
