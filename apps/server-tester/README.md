@@ -10,6 +10,8 @@ This app does not cover React Server Components. Use `apps/router-e2e` for those
 - `components/` holds the shared screen components. Use them in every route so the pages look the same on web and on native.
 - `servers/` holds the Express and workerd adapters that the E2E tests start against an exported `dist` directory.
 
+When you add an API route or loader, add its exported module to `servers/workerd/config.capnp` for workerd E2E tests.
+
 ## Run
 
 - Web, development: `pnpm start`, then open `http://localhost:8081`.
